@@ -6,7 +6,7 @@
 > Cách trả lời: thay dòng `> *Câu trả lời của bạn*` bằng câu trả lời.
 > `grade.py` đếm số câu đã trả lời (15 điểm cho 10 câu).
 >
-> Họ và tên: ..........................  Mã học viên: ..........................
+> Họ và tên: Hà Anh Tuấn                Mã học viên: 2A202602376
 
 ---
 
@@ -16,7 +16,7 @@ Trong `Settings`, `agent_api_key` không có giá trị mặc định nên app c
 khi khởi động nếu thiếu biến môi trường. Hãy mô tả một tình huống cụ thể mà
 việc "chết sớm" này cứu bạn, so với việc để mặc định `"changeme"`.
 
-> Khi deploy, nếu quên set AGENT_API_KEY, Settings lập tức báo lỗi và container không nhận traffic. Nếu dùng mặc định changeme, app vẫn chạy và người khác có thể dùng khóa đó để gọi LLM, phát sinh chi phí trước khi tôi phát hiện.
+> Khi deploy, nếu quên set agent_api_key, Settings lập tức báo lỗi và container không nhận traffic. Nếu dùng mặc định changeme, app vẫn chạy và người khác có thể dùng khóa đó để gọi LLM, phát sinh chi phí trước khi tôi phát hiện.
 
 ---
 
@@ -96,7 +96,7 @@ nhưng cost guard phải chặn, và một tình huống ngược lại.
 Nếu gộp hai endpoint làm một và cho nó kiểm tra Redis, chuyện gì xảy ra với cụm
 3 container khi Redis mất kết nối 30 giây? Trả lời theo đúng thứ tự sự kiện.
 
-> *Câu trả lời của bạn*
+> Nếu gộp /health và /ready rồi kiểm tra Redis, khi Redis mất kết nối 30 giây thì cả ba container vẫn còn chạy nhưng đều trả health 503. Load balancer coi cả ba instance là chết, ngừng gửi traffic hoặc restart chúng. Dịch vụ mất khả dụng dù chỉ Redis bị lỗi tạm thời; vì vậy /health chỉ kiểm tra process, còn /ready mới kiểm tra dependency.
 
 ---
 
@@ -106,7 +106,7 @@ Chạy `docker compose up --scale agent=3` rồi gọi `/ask` nhiều lần vớ
 `X-User-Id`. Quan sát `history_length` trong response. Nếu lịch sử được lưu
 trong một dict Python thay vì Redis, bạn sẽ thấy con số đó thay đổi thế nào?
 
-> *Câu trả lời của bạn*
+> Với Redis, lượt hỏi đầu tiên có history_length là 0 và lượt thứ hai thấy 2 message trước đó, không phụ thuộc request được route vào container nào. Nếu lưu bằng dict Python, mỗi container có một bộ nhớ riêng nên history_length sẽ dao động theo container: có lúc 0, có lúc 2 hoặc cao hơn, thay vì tăng nhất quán.
 
 ---
 
@@ -116,4 +116,4 @@ Ghi lại **một** lỗi bạn gặp khi deploy lên cloud (build fail, health 
 timeout, sai REDIS_URL, app không đọc `$PORT`...): thông báo lỗi là gì, bạn
 tìm ra nguyên nhân bằng cách nào, và sửa ra sao?
 
-> *Câu trả lời của bạn*
+> Khi deploy Railway, /health trả 200 nhưng /ready trả {"status":"not ready","redis":false}. Tôi dùng curl để tách hai endpoint và xác định process app ổn, chỉ kết nối Redis sai. Nguyên nhân là REDIS_URL local redis://redis:6379/0 không dùng được trên Railway. Tôi thêm Railway Redis, đổi REDIS_URL thành reference tới biến REDIS_URL của service Redis, redeploy, rồi /ready trả {"status":"ready","redis":true}.
