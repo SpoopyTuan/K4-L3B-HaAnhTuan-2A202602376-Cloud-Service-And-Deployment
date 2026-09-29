@@ -64,7 +64,11 @@ def health():
 
 @app.get("/ready")
 def ready(store: ConversationStore = Depends(get_store)):
-    raise NotImplementedError("TODO (CP4): implement /ready")
+    if lifecycle.shutting_down:
+        return JSONResponse(status_code=503, content={"status": "shutting_down"})
+    if not store.ping():
+        return JSONResponse(status_code=503, content={"status": "not ready", "redis": False})
+    return {"status": "ready", "redis": True}
 
 
 @app.post("/ask")
