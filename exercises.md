@@ -16,7 +16,7 @@ Trong `Settings`, `agent_api_key` không có giá trị mặc định nên app c
 khi khởi động nếu thiếu biến môi trường. Hãy mô tả một tình huống cụ thể mà
 việc "chết sớm" này cứu bạn, so với việc để mặc định `"changeme"`.
 
-> *Câu trả lời của bạn*
+> Khi deploy, nếu quên set AGENT_API_KEY, Settings lập tức báo lỗi và container không nhận traffic. Nếu dùng mặc định changeme, app vẫn chạy và người khác có thể dùng khóa đó để gọi LLM, phát sinh chi phí trước khi tôi phát hiện.
 
 ---
 
@@ -26,7 +26,7 @@ Chạy service và gọi `/ask` vài lần. Dán một dòng log JSON bạn thu 
 nêu **hai** việc bạn làm được với dòng log đó mà `print("đã trả lời xong")`
 không làm được.
 
-> *Câu trả lời của bạn*
+> Dòng log thu được: {"event":"ask_completed","level":"info","timestamp":"2026-09-29T03:46:04.286121+00:00","user_id":"sv-test","tokens_in":8,"tokens_out":31,"cost_usd":0.00002}. Tôi có thể lọc tất cả request của user_id sv-test và tính/tạo cảnh báo cho tổng cost_usd hoặc token; chuỗi print tự do không có field ổn định để làm hai việc này.
 
 ---
 
@@ -42,12 +42,12 @@ docker images | grep agent
 
 | Bản | Dung lượng |
 |-----|-----------|
-| 1 stage (bản đầu) | ... MB |
-| Multi-stage | ... MB |
+| 1 stage (bản đầu) | 1.7 GB |
+| Multi-stage | 271 MB |
 
 Giải thích: phần dung lượng chênh lệch đó là những gì?
 
-> *Câu trả lời của bạn*
+> Tôi đo được bản 1-stage là 1.7 GB, còn bản multi-stage là 271 MB. Phần chênh lệch chủ yếu đến từ base image python:3.11 đầy đủ và các dependency/artifact chỉ phục vụ build. Runtime multi-stage chỉ giữ Python slim, dependency đã cài và source cần thiết.
 
 ---
 
@@ -57,7 +57,7 @@ Sửa một ký tự trong `app/main.py` rồi build lại. Với Dockerfile c�
 layer nào được dùng lại từ cache, layer nào phải chạy lại? Nếu bạn đặt
 `COPY . .` lên trước `RUN pip install` thì kết quả khác thế nào?
 
-> *Câu trả lời của bạn*
+> Khi chỉ sửa app/main.py, các layer base image, COPY requirements.txt và pip install được dùng lại từ cache; layer COPY app/utils và layer sau nó build lại. Nếu COPY . . đứng trước pip install, thay đổi một ký tự trong source sẽ làm mất cache và cài lại toàn bộ dependency.
 
 ---
 
@@ -67,7 +67,7 @@ Container mặc định chạy bằng root. Mô tả chuỗi sự kiện dẫn t
 trong code Python của bạn" tới "kẻ tấn công có quyền cao trên máy host", và
 lệnh `USER` cắt đứt chuỗi đó ở chỗ nào.
 
-> *Câu trả lời của bạn*
+> Một lỗ hổng có thể cho phép kẻ tấn công chạy lệnh trong process Python; nếu process là root, lệnh đó có quyền root trong container và có thể tận dụng mount, Docker socket hoặc cấu hình sai để mở rộng ảnh hưởng sang host. USER appuser hạ quyền của process, nên việc chiếm được app không tự động trở thành root.
 
 ---
 
@@ -78,7 +78,7 @@ phút đồng hồ (reset lúc giây 00), một người dùng có thể gửi t
 request trong 2 giây liên tiếp khi hạn mức là 10/phút? Giải thích cách đạt được
 con số đó.
 
-> *Câu trả lời của bạn*
+> Tối đa là 20 request trong khoảng 2 giây: 10 request ngay trước 10:01:00, rồi 10 request ngay sau 10:01:00. Cách đếm theo phút đồng hồ reset quota ở mốc phút, còn sliding window tính cả hai nhóm trong 60 giây nên chặn nhóm sau.
 
 ---
 
@@ -87,7 +87,7 @@ con số đó.
 Hai cơ chế này khác nhau ở điểm nào? Cho một tình huống mà rate limit cho qua
 nhưng cost guard phải chặn, và một tình huống ngược lại.
 
-> *Câu trả lời của bạn*
+> Rate limiter giới hạn tần suất request trong 60 giây, còn cost guard giới hạn số tiền đã dùng trong tháng. Một user gọi ít request nhưng prompt rất lớn có thể qua rate limit nhưng bị cost guard chặn khi vượt budget. Ngược lại, user đã dùng hết quota 10 request/phút nhưng mỗi request rất rẻ và vẫn còn dư budget sẽ bị rate limiter chặn.
 
 ---
 
